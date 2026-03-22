@@ -1,23 +1,24 @@
 spring:
   application:
     name: aidocs
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/aidocs
-    username: admin
-    password: password
+    url: jdbc:postgresql://localhost:5440/aidocs
+    username: postgres
+    password: postgres
+
   ai:
     openai:
       api-key: ${OPENAI_API_KEY}
       chat:
         options:
-          model: gpt-3.5-turbo
+          model: gpt-4o-mini
+      embedding:
+        options:
+          model: text-embedding-3-small
+
     vectorstore:
       pgvector:
         index-type: HNSW
         distance-type: COSINE_DISTANCE
         dimensions: 1536
-#  main:
-#    banner-mode: off
-#logging:
-#  level:
-#    root: off
