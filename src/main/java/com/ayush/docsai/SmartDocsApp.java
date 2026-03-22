@@ -1,13 +1,13 @@
-package me.amiralles.aidocs;
+package com.ayush.docsai;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class AidocsApplication {
+public class SmartDocsApp {
 
 	public static void main(String[] args) {
-		SpringApplication.run(AidocsApplication.class, args);
+		SpringApplication.run(SmartDocsApp.class, args);
 	}
 
 }
