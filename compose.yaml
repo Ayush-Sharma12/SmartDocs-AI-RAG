@@ -1,11 +1,18 @@
 services:
-  pgvector:
-    image: 'ankane/pgvector:latest'
+  db:
+    image: ankane/pgvector:latest
+    container_name: smartdocs-db
+
     environment:
-      - 'POSTGRES_DB=aidocs'
-      - 'POSTGRES_PASSWORD=password'
-      - 'POSTGRES_USER=admin'
-    labels:
-      - "org.springframework.boot.service-connection=postgres"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: aidocs
+
     ports:
-      - '5432:5432'
+      - "5440:5432"
+
+    volumes:
+      - smartdocs_data:/var/lib/postgresql/data
+
+volumes:
+  smartdocs_data:
