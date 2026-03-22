@@ -1,4 +1,4 @@
-package me.amiralles.aidocs;
+package com.ayush.docsai;
 
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -12,32 +12,50 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
+import java.util.Optional;
 
 @Component
 public class ReferenceDocsLoader {
 
     private static final Logger log = LoggerFactory.getLogger(ReferenceDocsLoader.class);
 
-    @Value("classpath:/docs/spring-boot-reference.pdf")
+    @Value("classpath:/docs/technical-reference.pdf")
     private Resource pdfResource;
 
-    private final JdbcClient jdbcClient;
+    private final Optional<JdbcClient> jdbcClient;
     private final VectorStore vectorStore;
 
-    public ReferenceDocsLoader(JdbcClient jdbcClient, VectorStore vectorStore) {
+    public ReferenceDocsLoader(Optional<JdbcClient> jdbcClient, VectorStore vectorStore) {
         this.jdbcClient = jdbcClient;
         this.vectorStore = vectorStore;
     }
 
     @PostConstruct
     public void init() {
-        Integer count = jdbcClient.sql("select count(*) from vector_store")
-                .query(Integer.class)
-                .single();
+        if (jdbcClient.isPresent()) {
+            try {
+                Integer count = jdbcClient.get().sql("select count(*) from vector_store")
+                        .query(Integer.class)
+                        .single();
 
-        log.info("Current count of the Vector Store: {}", count);
-        if (count == 0) {
-            log.info("Loading Spring Boot Reference PDF into Vector Store");
+                log.info("Current count of the Vector Store: {}", count);
+                if (count == 0) {
+                    log.info("Loading Spring Boot Reference PDF into Vector Store");
+                    loadPdfToVectorStore();
+                }
+            } catch (Exception e) {
+                log.warn("Database not available, using in-memory vector store: {}", e.getMessage());
+                log.info("Loading Spring Boot Reference PDF into in-memory Vector Store");
+                loadPdfToVectorStore();
+            }
+        } else {
+            log.info("No database configured, using in-memory vector store");
+            loadPdfToVectorStore();
+        }
+    }
+
+    private void loadPdfToVectorStore() {
+        try {
             var config = PdfDocumentReaderConfig.builder()
                     .withPageExtractedTextFormatter(new ExtractedTextFormatter.Builder().withNumberOfBottomTextLinesToDelete(0)
                             .withNumberOfTopPagesToSkipBeforeDelete(0)
@@ -50,6 +68,8 @@ public class ReferenceDocsLoader {
             vectorStore.accept(textSplitter.apply(pdfReader.get()));
 
             log.info("Application is ready");
+        } catch (Exception e) {
+            log.error("Failed to load PDF into vector store: {}", e.getMessage());
         }
     }
 }
