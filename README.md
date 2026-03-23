@@ -1,208 +1,210 @@
-# SmartDocs AI – Intelligent Document Q&A System (RAG-Based)
+# SmartDocs AI
 
-SmartDocs AI is an AI-powered document intelligence system built using the Retrieval-Augmented Generation (RAG) pattern. It enables users to ask natural language questions over technical documents (PDFs) and receive accurate, context-aware answers by combining vector search with Large Language Models.
+SmartDocs AI is a full-stack RAG application for private PDF question answering. Users can register, upload documents, index them into a pgvector-backed vector store, and ask grounded questions through a React dashboard powered by Spring Boot, Spring AI, PostgreSQL, and OpenAI models.
 
-This project demonstrates how modern backend systems can integrate Spring Boot, Spring AI, PostgreSQL + PGVector, and OpenAI models to build production-grade AI features.
-
-## 🏗️ System Architecture
+## Architecture
 
 ```mermaid
-graph TB
-    subgraph "Application Layer"
-        A[Spring Boot Application]
-        B[Spring Shell CLI]
-        C[SpringAssistantCommand]
+flowchart LR
+    U[User]
+
+    subgraph FE[Frontend - React + Vite]
+        A[Auth Pages]
+        D[Dashboard]
+        API[Axios API Client]
+        LS[Local Storage JWT]
     end
-    
-    subgraph "AI Processing Layer"
-        D[Spring AI Framework]
-        E[OpenAI GPT-3.5 Turbo]
-        F[Document Reader<br/>PDF Processing]
-        G[Token Text Splitter]
+
+    subgraph BE[Backend - Spring Boot]
+        SC[SecurityConfig]
+        JF[JWT Authentication Filter]
+        AC[AuthController]
+        DC[DocumentController]
+        QC[QaController]
+        AS[AuthService]
+        DS[DocumentService]
+        QS[QaService]
+        RL[ReferenceDocsLoader]
     end
-    
-    subgraph "Data Layer"
-        H[PostgreSQL Database]
-        I[PGVector Extension]
-        J[Vector Store<br/>Embeddings]
+
+    subgraph DATA[Data Layer]
+        PG[(PostgreSQL)]
+        UR[(users table)]
+        DR[(app_document table)]
+        VS[(pgvector vector_store)]
+        FS[(uploads/ PDF files)]
     end
-    
-    subgraph "Document Sources"
-        K[Spring Boot Reference PDF]
-        L[Prompt Templates]
+
+    subgraph AI[AI Pipeline]
+        PR[PDF Reader + TokenTextSplitter]
+        EM[OpenAI Embeddings]
+        CM[OpenAI Chat Model]
+        PT[Prompt Template]
     end
-    
-    B --> C
-    C --> D
-    D --> E
-    D --> J
-    F --> G
-    G --> J
-    K --> F
-    L --> C
-    J --> I
-    I --> H
-    
-    classDef appLayer fill:#e1f5fe
-    classDef aiLayer fill:#f3e5f5
-    classDef dataLayer fill:#e8f5e8
-    classDef docLayer fill:#fff3e0
-    
-    class A,B,C appLayer
-    class D,E,F,G aiLayer
-    class H,I,J dataLayer
-    class K,L docLayer
+
+    U --> A
+    U --> D
+    A --> API
+    D --> API
+    API --> LS
+    API --> SC
+    SC --> JF
+    JF --> AC
+    JF --> DC
+    JF --> QC
+
+    AC --> AS
+    AS --> UR
+    AS --> PG
+
+    DC --> DS
+    DS --> DR
+    DS --> FS
+    DS --> PR
+    PR --> EM
+    EM --> VS
+    VS --> PG
+    DR --> PG
+    UR --> PG
+
+    QC --> QS
+    QS --> VS
+    QS --> PT
+    QS --> CM
+
+    RL --> PR
+    RL --> VS
 ```
 
-## 🔧 Components Overview
+## Request Flow
 
-- **Document Ingestion**: Automatically loads and processes PDF documents into vector embeddings
-- **Vector Database**: PostgreSQL with PGVector extension for semantic similarity search
-- **AI Chat**: OpenAI GPT integration for generating contextual responses
-- **CLI Interface**: Spring Shell for interactive querying
-- **RAG Pipeline**: Retrieves relevant documents and augments AI responses
+### Authentication
 
-## 🚀 Getting Started
+1. The React frontend sends register or login requests to `/api/auth`.
+2. `AuthService` validates credentials, hashes passwords with BCrypt, and stores users in PostgreSQL.
+3. The backend returns a JWT token.
+4. The frontend stores the token in local storage and attaches it to future API requests.
+
+### Document Upload and Indexing
+
+1. An authenticated user uploads a PDF from the dashboard.
+2. `DocumentService` validates the file, saves it under `uploads/`, and stores document metadata in PostgreSQL.
+3. Spring AI reads the PDF and splits it into chunks.
+4. Each chunk is tagged with `userId`, `documentId`, and filename metadata.
+5. Embeddings are generated and written into the pgvector-backed `vector_store`.
+
+### Question Answering
+
+1. The dashboard sends a question to `/api/qa/ask`, optionally scoped to one document.
+2. `QaService` runs similarity search in the vector store using the authenticated user's metadata filter.
+3. Matching chunks are inserted into the prompt template in `src/main/resources/prompts/smartdocs-prompt.st`.
+4. The OpenAI chat model generates a grounded answer and returns it to the frontend.
+
+## Tech Stack
+
+- Backend: Spring Boot, Spring Security, Spring Data JPA, Spring AI
+- Frontend: React, Vite, React Router, Axios
+- Database: PostgreSQL
+- Vector Search: PGVector
+- AI Models: OpenAI chat model and embedding model
+- Auth: JWT + BCrypt
+- File Processing: Spring AI PDF reader + token text splitting
+
+## Project Structure
+
+```text
+frontend/
+  src/pages/            React routes for home, auth, and dashboard
+  src/services/api.js   API client and JWT storage helpers
+src/main/java/com/ayush/docsai/
+  config/               Spring Security configuration
+  controller/           REST endpoints
+  service/              Auth, document ingestion, and Q&A logic
+  repository/           JPA repositories
+  entity/               User and document entities
+  security/             JWT token creation and request filtering
+src/main/resources/
+  application.yaml      App, database, and AI configuration
+  prompts/              Prompt template used for grounded answers
+  docs/                 Optional seeded reference PDF
+  schema.sql            Vector store schema support
+uploads/                Stored user PDFs at runtime
+```
+
+## Getting Started
 
 ### Prerequisites
 
-- Java 21+
-- Maven 3.6+
-- Docker and Docker Compose
-- OpenAI API Key
+- Java 17+
+- Maven
+- Node.js 18+
+- Docker
+- OpenAI API key
 
-### 1. Clone the Repository
+### 1. Start PostgreSQL with pgvector
 
 ```bash
-git clone <repository-url>
-cd springboot-ai-rag-docingest
+docker compose up -d
 ```
 
-### 2. Set Up Environment Variables
+The default local database is exposed on port `5440`.
 
-```bash
-export OPENAI_API_KEY="your-openai-api-key-here"
+### 2. Configure environment variables
+
+Create a `.env` file for the backend with values such as:
+
+```env
+OPENAI_API_KEY=your-openai-api-key
+DB_HOST=localhost
+DB_PORT=5440
+DB_NAME=aidocs
+DB_USER=postgres
+DB_PASSWORD=postgres
+JWT_SECRET=change-this-secret
+FRONTEND_URL=http://localhost:5173
 ```
 
-### 3. Start PostgreSQL Database
-
-#### Using Docker Compose (Recommended)
-```bash
-docker-compose up -d
-```
-
-#### Using Docker Command Directly
-```bash
-docker run -d \
-  --name pgvector-db \
-  -e POSTGRES_DB=aidocs \
-  -e POSTGRES_USER=admin \
-  -e POSTGRES_PASSWORD=password \
-  -p 5432:5432 \
-  ankane/pgvector:latest
-```
-
-### 4. Build and Run the Application
+### 3. Run the backend
 
 ```bash
-# Build the application
-./mvnw clean compile
-
-# Run the application
 ./mvnw spring-boot:run
 ```
 
-The application will automatically:
-1. Connect to the PostgreSQL database
-2. Create the vector store schema
-3. Load and process the Spring Boot reference PDF
-4. Generate embeddings and store them in the vector database
+On Windows PowerShell:
 
-### 5. Using the Application
+```powershell
+.\mvnw.cmd spring-boot:run
+```
 
-Once started, you'll see a Spring Shell prompt. Use the following commands:
+### 4. Run the frontend
 
 ```bash
-# Ask a question about Spring Boot
-shell:> q "How do I configure a DataSource in Spring Boot?"
-
-# Ask another question
-shell:> q "What are Spring Boot starters?"
-
-# Exit the application
-shell:> exit
+cd frontend
+npm install
+npm run dev
 ```
 
-## 📊 How It Works
+If needed, point the frontend at the backend with:
 
-1. **Document Loading**: On startup, `ReferenceDocsLoader` checks if documents exist in the vector store
-2. **PDF Processing**: Uses Spring AI's `PagePdfDocumentReader` to extract text from PDF files
-3. **Text Splitting**: `TokenTextSplitter` breaks documents into manageable chunks
-4. **Embedding Generation**: OpenAI creates vector embeddings for each text chunk
-5. **Storage**: Embeddings are stored in PostgreSQL with PGVector extension
-6. **Query Processing**: User questions are converted to embeddings and matched against stored documents
-7. **Response Generation**: Retrieved documents provide context for GPT to generate accurate answers
-
-## ⚙️ Configuration
-
-### Database Configuration
-- **Host**: localhost:5432
-- **Database**: aidocs
-- **Username**: admin
-- **Password**: password
-
-### AI Configuration
-- **Model**: GPT-3.5 Turbo
-- **Embedding Dimensions**: 1536
-- **Vector Distance**: Cosine Distance
-- **Index Type**: HNSW
-
-### Customization
-
-- **Add new documents**: Place PDF files in `src/main/resources/docs/`
-- **Modify prompts**: Edit templates in `src/main/resources/prompts/`
-- **Change AI model**: Update `spring.ai.openai.chat.options.model` in `application.yaml`
-
-## 🗂️ Project Structure
-
-```
-src/
-├── main/
-│   ├── java/com/ayush/docsai/
-│   │   ├── SmartDocsApplication.java  
-│   │   ├── DocumentIngestionService.java
-│   │   └── SmartDocsCommand.java
-│   └── resources/
-│       ├── application.yaml
-│       ├── schema.sql
-│       ├── docs/
-│       │   └── technical-reference.pdf
-│       └── prompts/
-│           └── smartdocs-prompt.st
-└── test/
-    └── SmartDocsApplicationTests.java
-
+```env
+VITE_API_URL=http://localhost:8080/api
 ```
 
-## 🛠️ Technologies Used
+## API Surface
 
-- **Spring Boot 3.2.5** - Application framework
-- **Spring AI 0.8.1** - AI integration framework
-- **Spring Shell 3.2.4** - CLI interface
-- **PostgreSQL** - Primary database
-- **PGVector** - Vector similarity search extension
-- **OpenAI GPT-3.5** - Language model for responses
-- **Maven** - Build tool
-- **Docker** - Containerization
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/documents`
+- `POST /api/documents/upload`
+- `DELETE /api/documents/{documentId}`
+- `POST /api/qa/ask`
 
-## 📝 Example Queries
+## Notes
 
-Try asking questions like:
-- "What is Spring Boot Auto Configuration?"
-- "How do I create a REST controller?"
-- "What are the different ways to configure properties?"
-- "How does Spring Boot handle dependency injection?"
+- Uploaded PDFs are user-scoped during retrieval through vector metadata filters.
+- `ReferenceDocsLoader` can optionally seed a bundled reference PDF when `SEED_REFERENCE_DOCS=true`.
+- The backend accepts PDF uploads up to 10 MB.
 
-## 📄 License
+## License
 
-This project is a demonstration example for educational purposes.
+This project is for educational and portfolio use.
