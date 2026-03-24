@@ -3,6 +3,7 @@ package com.ayush.docsai;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.ExtractedTextFormatter;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -21,6 +23,9 @@ public class ReferenceDocsLoader {
 
     @Value("classpath:/docs/technical-reference.pdf")
     private Resource pdfResource;
+
+    @Value("${app.seed-reference-docs:false}")
+    private boolean seedReferenceDocs;
 
     private final Optional<JdbcClient> jdbcClient;
     private final VectorStore vectorStore;
@@ -32,6 +37,11 @@ public class ReferenceDocsLoader {
 
     @PostConstruct
     public void init() {
+        if (!seedReferenceDocs) {
+            log.info("Reference document seeding is disabled");
+            return;
+        }
+
         if (jdbcClient.isPresent()) {
             try {
                 Integer count = jdbcClient.get().sql("select count(*) from vector_store")
@@ -65,7 +75,16 @@ public class ReferenceDocsLoader {
 
             var pdfReader = new PagePdfDocumentReader(pdfResource, config);
             var textSplitter = new TokenTextSplitter();
-            vectorStore.accept(textSplitter.apply(pdfReader.get()));
+            List<Document> splitDocuments = textSplitter.apply(pdfReader.get())
+                    .stream()
+                    .map(document -> {
+                        document.getMetadata().put("userId", -1L);
+                        document.getMetadata().put("documentId", "reference-doc");
+                        document.getMetadata().put("source", "technical-reference.pdf");
+                        return document;
+                    })
+                    .toList();
+            vectorStore.accept(splitDocuments);
 
             log.info("Application is ready");
         } catch (Exception e) {
