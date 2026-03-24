@@ -3,9 +3,18 @@ spring:
     name: aidocs
 
   datasource:
-    url: jdbc:postgresql://localhost:5440/aidocs
-    username: postgres
-    password: postgres
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5440}/${DB_NAME:aidocs}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        '[format_sql]': true
+    open-in-view: false
 
   ai:
     openai:
@@ -22,3 +31,13 @@ spring:
         index-type: HNSW
         distance-type: COSINE_DISTANCE
         dimensions: 1536
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  jwt-secret: ${JWT_SECRET:change-this-secret-for-production-use-only}
+  jwt-expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  upload-dir: ${APP_UPLOAD_DIR:uploads}
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  seed-reference-docs: ${SEED_REFERENCE_DOCS:false}
