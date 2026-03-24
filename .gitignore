@@ -25,10 +25,15 @@ build/
 
 # Logs
 *.log
+aidocs.log
+backend.log
 
-# Environment
+# Environment & Secrets
 .env
 .env.local
+.env.*.local
+task_progress.md
+env.properties
 
 # Build artifacts
 out/
@@ -39,7 +44,20 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+frontend/node_modules/
+*.tsbuildinfo
 
 # Spring Boot
 application-*.properties
 application-*.yaml
+
+# Docker files with secrets (use .example versions instead)
+compose.yaml
+docker-compose-complete.yml
+
+# User uploaded files
+uploads/
+
+# OS files
+.DS_Store
+Thumbs.db
