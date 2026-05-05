@@ -9,7 +9,7 @@ services:
       POSTGRES_DB: aidocs
 
     ports:
-      - "5432:5432"
+      - "5440:5432"
 
     volumes:
       - smartdocs_data:/var/lib/postgresql/data

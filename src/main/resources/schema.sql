@@ -1,5 +1,2 @@
--- PostgreSQL-specific extensions (only for PostgreSQL, not H2)
--- H2 will auto-create tables using JPA entity definitions
--- Uncomment below for PostgreSQL only:
--- CREATE EXTENSION IF NOT EXISTS vector;
--- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

@@ -71,9 +71,6 @@ public class QaService {
                     .build();
         } catch (IOException exception) {
             throw new IllegalArgumentException("Unable to read prompt template");
-        } catch (RuntimeException exception) {
-            throw new IllegalArgumentException(
-                    AiErrorMessageResolver.resolve(exception, "Unable to generate an answer right now"));
         }
     }
 
