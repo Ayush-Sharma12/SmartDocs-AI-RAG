@@ -7,14 +7,14 @@ export default function Toast({ message, type, onClose }) {
   }, [onClose]);
 
   return (
-    <div className={`toast toast-${type}`}>
+    <div className={`toast toast-${type}`} role="status" aria-live={type === "error" ? "assertive" : "polite"}>
       <div className="toast-content">
-        <span className="toast-icon">
+        <span className="toast-icon" aria-hidden="true">
           {type === "success" ? "✓" : type === "error" ? "✕" : "ℹ"}
         </span>
         <p>{message}</p>
       </div>
-      <button className="toast-close" onClick={onClose}>×</button>
+      <button className="toast-close" onClick={onClose} aria-label="Close notification">×</button>
     </div>
   );
 }

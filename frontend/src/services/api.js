@@ -4,7 +4,8 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api"
 const STORAGE_KEY = "smartdocs_auth";
 
 const client = axios.create({
-  baseURL: API_BASE_URL
+  baseURL: API_BASE_URL,
+  timeout: 10000
 });
 
 client.interceptors.request.use((config) => {
@@ -14,6 +15,14 @@ client.interceptors.request.use((config) => {
   }
   return config;
 });
+
+client.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const err = error.response?.data || error.message;
+    return Promise.reject(err);
+  }
+);
 
 export async function register(username, email, password) {
   const response = await client.post("/auth/register", { username, email, password });

@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.Optional;
 
 @Service
@@ -54,14 +55,14 @@ public class QaService {
         }
 
         try {
-            String template = new String(promptTemplate.getContentAsByteArray(), StandardCharsets.UTF_8);
-            PromptTemplate promptTemplate = new PromptTemplate(template);
+            String templateStr = new String(promptTemplate.getContentAsByteArray(), StandardCharsets.UTF_8);
+            PromptTemplate promptTpl = new PromptTemplate(templateStr);
 
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("input", request.getQuestion());
-            parameters.put("documents", matches.stream().map(Document::getText).reduce("", (a, b) -> a + "\n" + b).trim());
+            parameters.put("documents", matches.stream().map(Document::getText).collect(Collectors.joining("\n\n")).trim());
 
-            Prompt prompt = promptTemplate.create(parameters);
+            Prompt prompt = promptTpl.create(parameters);
             String answer = chatModel.get().call(prompt).getResult().getOutput().getText();
 
             return AnswerResponse.builder()
@@ -70,7 +71,7 @@ public class QaService {
                     .documentId(request.getDocumentId())
                     .build();
         } catch (IOException exception) {
-            throw new IllegalArgumentException("Unable to read prompt template");
+            throw new IllegalArgumentException("Unable to read prompt template", exception);
         }
     }
 

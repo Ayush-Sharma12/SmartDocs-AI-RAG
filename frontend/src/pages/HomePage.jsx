@@ -32,14 +32,14 @@ export default function HomePage() {
         <h1>Ask your PDFs questions through a secure full-stack workspace.</h1>
         <p className="hero-copy">
           Upload technical documents, keep access private to signed-in users,
-          and get grounded answers from a Spring Boot plus React document QA app.
+          and get concise, grounded answers from your documents — powered by Spring Boot and React.
         </p>
         <div className="hero-actions">
           <Link className="button primary" to="/register">
-            Create account
+            Get started
           </Link>
           <Link className="button secondary" to="/login">
-            Sign in
+            Log in
           </Link>
         </div>
         <div className="hero-grid">
