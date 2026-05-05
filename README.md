@@ -99,6 +99,7 @@ flowchart LR
 2. `QaService` runs similarity search in the vector store using the authenticated user's metadata filter.
 3. Matching chunks are inserted into the prompt template in `src/main/resources/prompts/smartdocs-prompt.st`.
 4. The OpenAI chat model generates a grounded answer and returns it to the frontend.
+5. The model provide context aware responses.
 
 ## Tech Stack
 
