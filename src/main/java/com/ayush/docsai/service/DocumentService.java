@@ -63,9 +63,16 @@ public class DocumentService {
                 .user(user)
                 .build());
 
-        indexDocument(user.getId(), document);
-        document.setIndexed(true);
-        return toResponse(appDocumentRepository.save(document));
+        try {
+            indexDocument(user.getId(), document);
+            document.setIndexed(true);
+            return toResponse(appDocumentRepository.save(document));
+        } catch (RuntimeException exception) {
+            Files.deleteIfExists(destination);
+            appDocumentRepository.deleteById(document.getId());
+            throw new IllegalArgumentException(
+                    AiErrorMessageResolver.resolve(exception, "Document upload succeeded, but indexing failed"));
+        }
     }
 
     public List<DocumentResponse> getUserDocuments(Long userId) {

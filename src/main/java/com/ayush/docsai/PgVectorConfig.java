@@ -1,7 +1,13 @@
 package com.ayush.docsai;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -9,9 +15,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnSingleCandi
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Optional;
 
 @Configuration
@@ -23,13 +28,13 @@ public class PgVectorConfig {
     @ConditionalOnMissingBean
     @ConditionalOnSingleCandidate(JdbcTemplate.class)
     @ConditionalOnProperty(name = "app.vector-store.type", havingValue = "pgvector", matchIfMissing = true)
-    public VectorStore vectorStore(JdbcTemplate jdbcTemplate, Optional<EmbeddingModel> embeddingModel) {
+    public VectorStore pgVectorStore(JdbcTemplate jdbcTemplate, Optional<EmbeddingModel> embeddingModel) {
         if (embeddingModel.isEmpty()) {
-            log.warn("EmbeddingModel is not configured. Falling back to in-memory vector store.");
-            return new InMemoryVectorStore();
+            log.warn("EmbeddingModel is not configured. Falling back to a no-op vector store.");
+            return new NoOpVectorStore();
         }
 
-        log.info("Configuring PgVectorStore with PostgreSQL-backed embeddings");
+        log.info("Using PgVectorStore");
         return PgVectorStore.builder(jdbcTemplate, embeddingModel.get())
                 .dimensions(1536)
                 .initializeSchema(true)
@@ -38,28 +43,40 @@ public class PgVectorConfig {
 
     @Bean
     @ConditionalOnMissingBean
-    public VectorStore fallbackVectorStore() {
-        log.warn("Using in-memory vector store fallback");
-        return new InMemoryVectorStore();
+    @ConditionalOnProperty(name = "app.vector-store.type", havingValue = "simple")
+    public VectorStore simpleVectorStore(Optional<EmbeddingModel> embeddingModel) {
+        if (embeddingModel.isEmpty()) {
+            log.warn("EmbeddingModel is not configured. Falling back to a no-op vector store.");
+            return new NoOpVectorStore();
+        }
+
+        log.info("Using SimpleVectorStore");
+        return SimpleVectorStore.builder(embeddingModel.get()).build();
     }
 
-    static class InMemoryVectorStore implements VectorStore {
+    @Bean
+    @ConditionalOnMissingBean
+    public VectorStore fallbackVectorStore() {
+        log.warn("No vector store profile matched. Falling back to a no-op vector store.");
+        return new NoOpVectorStore();
+    }
+
+    static class NoOpVectorStore implements VectorStore {
         @Override
-        public void add(java.util.List<org.springframework.ai.document.Document> documents) {
+        public void add(List<Document> documents) {
         }
 
         @Override
-        public void delete(java.util.List<String> idList) {
+        public void delete(List<String> idList) {
         }
 
         @Override
-        public void delete(org.springframework.ai.vectorstore.filter.Filter.Expression where) {
+        public void delete(Filter.Expression where) {
         }
 
         @Override
-        public java.util.List<org.springframework.ai.document.Document> similaritySearch(
-                org.springframework.ai.vectorstore.SearchRequest request) {
-            return java.util.List.of();
+        public List<Document> similaritySearch(SearchRequest request) {
+            return List.of();
         }
     }
 }
