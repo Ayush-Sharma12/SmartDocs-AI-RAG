@@ -79,7 +79,7 @@ public class QaService {
         FilterExpressionBuilder builder = new FilterExpressionBuilder();
         SearchRequest.Builder requestBuilder = SearchRequest.builder()
                 .query(question != null ? question : "")
-                .topK(4);
+                .topK(5);
 
         if (documentId != null) {
             requestBuilder.filterExpression(builder.and(
