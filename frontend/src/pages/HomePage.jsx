@@ -21,7 +21,7 @@ export default function HomePage() {
       id: 3,
       icon: "👥",
       title: "Built for teams",
-      description: "A clean dashboard keeps document management and question workflows in one place."
+        description: "A clean dashboard keeps document management and question workflows in one place. Collaborate securely."
     }
   ];
 
