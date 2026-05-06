@@ -800,6 +800,16 @@ a:hover {
   color: #5b8def;
 }
 
+/* App header style added for small UI improvement */
+.app-header {
+  padding: 12px 20px;
+  text-align: center;
+  font-weight: 700;
+  background: linear-gradient(90deg, rgba(255,255,255,0.9), rgba(245,249,255,0.6));
+  border-bottom: 1px solid rgba(19,34,56,0.06);
+  color: #173254;
+}
+
 /* Smooth Page Transitions */
 .page {
   animation: fadeIn 0.3s ease-out;
