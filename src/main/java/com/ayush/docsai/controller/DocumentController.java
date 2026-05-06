@@ -18,6 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/documents")
@@ -25,6 +27,7 @@ import java.util.Map;
 public class DocumentController {
 
     private final DocumentService documentService;
+    private static final Logger logger = LoggerFactory.getLogger(DocumentController.class);
 
     public DocumentController(DocumentService documentService) {
         this.documentService = documentService;
@@ -32,20 +35,28 @@ public class DocumentController {
 
     @GetMapping
     public List<DocumentResponse> getDocuments(Authentication authentication) {
-        return documentService.getUserDocuments((Long) authentication.getDetails());
+        Long userId = (Long) authentication.getDetails();
+        logger.info("Fetching documents for userId={}", userId);
+        return documentService.getUserDocuments(userId);
     }
 
     @PostMapping("/upload")
     public ResponseEntity<DocumentResponse> uploadDocument(@RequestParam("file") MultipartFile file,
                                                            Authentication authentication) throws IOException {
-        DocumentResponse response = documentService.uploadDocument((Long) authentication.getDetails(), file);
+        Long userId = (Long) authentication.getDetails();
+        logger.info("Uploading document for userId={}, originalFilename={}", userId, file.getOriginalFilename());
+        DocumentResponse response = documentService.uploadDocument(userId, file);
+        logger.info("Uploaded document id={} for userId={}", response.getId(), userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @DeleteMapping("/{documentId}")
     public Map<String, String> deleteDocument(@PathVariable Long documentId, Authentication authentication)
             throws IOException {
-        documentService.deleteDocument((Long) authentication.getDetails(), documentId);
+        Long userId = (Long) authentication.getDetails();
+        logger.info("Deleting document id={} for userId={}", documentId, userId);
+        documentService.deleteDocument(userId, documentId);
+        logger.info("Deleted document id={} for userId={}", documentId, userId);
         return Map.of("message", "Document deleted successfully");
     }
 }

@@ -23,11 +23,15 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class DocumentService {
 
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+    private static final Logger logger = LoggerFactory.getLogger(DocumentService.class);
 
     private final AppDocumentRepository appDocumentRepository;
     private final UserRepository userRepository;
@@ -50,9 +54,12 @@ public class DocumentService {
         User user = getUser(userId);
         validateFile(file);
 
+        logger.info("Starting upload for userId={}, originalFilename={}", userId, file.getOriginalFilename());
         String storedFilename = UUID.randomUUID() + "-" + sanitizeFilename(file.getOriginalFilename());
         Path destination = uploadDir.resolve(storedFilename);
         Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
+
+        logger.debug("Saved uploaded file to {}", destination);
 
         AppDocument document = appDocumentRepository.save(AppDocument.builder()
                 .filename(storedFilename)
@@ -65,6 +72,7 @@ public class DocumentService {
 
         indexDocument(user.getId(), document);
         document.setIndexed(true);
+        logger.info("Indexed document id={} for userId={}", document.getId(), userId);
         return toResponse(appDocumentRepository.save(document));
     }
 
@@ -84,8 +92,14 @@ public class DocumentService {
                 builder.eq("documentId", documentId)
         ).build());
 
-        Files.deleteIfExists(Path.of(document.getFilePath()));
+        boolean deleted = Files.deleteIfExists(Path.of(document.getFilePath()));
+        if (deleted) {
+            logger.debug("Deleted file {} for document id={}", document.getFilePath(), documentId);
+        } else {
+            logger.warn("File {} did not exist when deleting document id={}", document.getFilePath(), documentId);
+        }
         appDocumentRepository.delete(document);
+        logger.info("Removed document id={} for userId={}", documentId, userId);
     }
 
     public AppDocument getOwnedDocument(Long userId, Long documentId) {
@@ -150,6 +164,7 @@ public class DocumentService {
     }
 
     private String sanitizeFilename(String filename) {
+        if (filename == null) return "";
         return filename.replaceAll("[^a-zA-Z0-9._-]", "_");
     }
 }
