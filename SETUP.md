@@ -137,3 +137,5 @@ Get-NetTCPConnection -LocalPort 8080 | Stop-Process -Force
 - RAG performance metrics
 - Vector store caching
 - API endpoints for integration
+
+Note: minor UI and backend logging improvements were applied (header, toast accessibility, request/service logs).
