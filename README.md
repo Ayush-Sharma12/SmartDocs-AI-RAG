@@ -200,6 +200,8 @@ VITE_API_URL=http://localhost:8080/api
 - `DELETE /api/documents/{documentId}`
 - `POST /api/qa/ask`
 
+Note: small UI and logging improvements applied (App header, Toast accessibility, backend logs).
+
 ## Notes
 
 - Uploaded PDFs are user-scoped during retrieval through vector metadata filters.
