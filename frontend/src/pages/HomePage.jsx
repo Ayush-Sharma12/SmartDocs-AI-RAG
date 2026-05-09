@@ -31,8 +31,8 @@ export default function HomePage() {
         <p className="eyebrow">SmartDocs AI</p>
         <h1>Ask your PDFs questions through a secure full-stack workspace.</h1>
         <p className="hero-copy">
-          Upload technical documents, keep access private to signed-in users,
-          and get concise, grounded answers from your documents — powered by Spring Boot and React.
+          Upload documents, keep access private to signed-in users,
+          and receive concise, grounded answers from your content — powered by Spring Boot + React.
         </p>
         <div className="hero-actions">
           <Link className="button primary" to="/register">
