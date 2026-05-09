@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 export default function Toast({ message, type, onClose }) {
   useEffect(() => {
-    const timer = setTimeout(onClose, 5000);
+    const timer = setTimeout(onClose, 4000);
     return () => clearTimeout(timer);
   }, [onClose]);
 
@@ -12,7 +12,7 @@ export default function Toast({ message, type, onClose }) {
       role={type === "error" ? "alert" : "status"}
       aria-live={type === "error" ? "assertive" : "polite"}
       tabIndex={0}
-      onKeyDown={(e) => e.key === "Escape" && onClose()}
+      onKeyDown={(e) => (e.key === "Escape" || e.key === "Enter") && onClose()}
     >
       <div className="toast-content">
         <span className="toast-icon" aria-hidden="true">
