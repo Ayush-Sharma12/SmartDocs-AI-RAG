@@ -105,7 +105,10 @@ public class DocumentService {
     public AppDocument getOwnedDocument(Long userId, Long documentId) {
         User user = getUser(userId);
         return appDocumentRepository.findByIdAndUser(documentId, user)
-                .orElseThrow(() -> new IllegalArgumentException("Document not found"));
+                .orElseThrow(() -> {
+                    logger.debug("Document id={} not found for userId={}", documentId, userId);
+                    return new IllegalArgumentException("Document not found: id=" + documentId);
+                });
     }
 
     @SuppressWarnings("null")
