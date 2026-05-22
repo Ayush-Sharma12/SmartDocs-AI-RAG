@@ -20,9 +20,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class QaService {
+
+    private static final Logger logger = LoggerFactory.getLogger(QaService.class);
 
     private final Optional<ChatModel> chatModel;
     private final VectorStore vectorStore;
@@ -41,7 +45,10 @@ public class QaService {
 
     @SuppressWarnings("null")
     public AnswerResponse answerQuestion(Long userId, QuestionRequest request) {
+        logger.info("Answering question for userId={}, documentId={}", userId, request.getDocumentId());
+
         if (chatModel.isEmpty()) {
+            logger.error("Chat model is not configured");
             throw new IllegalArgumentException("Chat model is not configured. Set OPENAI_API_KEY first.");
         }
 
@@ -51,6 +58,7 @@ public class QaService {
 
         List<Document> matches = findSimilarDocuments(userId, request.getQuestion(), request.getDocumentId());
         if (matches.isEmpty()) {
+            logger.debug("No indexed content found for userId={} question={}", userId, request.getQuestion());
             throw new IllegalArgumentException("No indexed content found for this question");
         }
 
@@ -63,9 +71,11 @@ public class QaService {
             parameters.put("documents", matches.stream().map(Document::getText).collect(Collectors.joining("\n\n")).trim());
 
             Prompt prompt = promptTpl.create(parameters);
-            String answer = chatModel.get().call(prompt).getResult().getOutput().getText();
+                var result = chatModel.get().call(prompt).getResult();
+                String answer = result == null || result.getOutput() == null ? "" : result.getOutput().getText();
+                logger.debug("Model produced answer length={} for userId={}", answer.length(), userId);
 
-            return AnswerResponse.builder()
+                return AnswerResponse.builder()
                     .question(request.getQuestion())
                     .answer(answer)
                     .documentId(request.getDocumentId())
